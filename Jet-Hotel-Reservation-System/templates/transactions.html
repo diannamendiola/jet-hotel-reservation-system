@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>My Transactions</h2>
+
+{% if transactions %}
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Transaction ID</th>
+            <th>Reservation ID</th>
+            <th>Room</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.id }}</td>
+            <td>{{ t.reservation.id }}</td>
+            <td>{{ t.reservation.room.name }}</td>
+            <td>₱{{ t.amount }}</td>
+            <td>
+                <span class="badge bg-{{ 'success' if t.status=='Paid' else 'info' if t.status=='Payment Confirmed' else 'warning' if t.status=='Pending' else 'danger' }}">{{ t.status }}</span>
+            </td>
+            <td>{{ t.created_at.strftime('%B %d, %Y %I:%M %p') }}</td>
+            <td>
+                {% if t.status == 'Pending' %}
+                <form method="POST" action="{{ url_for('confirm_payment', transaction_id=t.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-primary"
+                            onclick="return confirm('Are you sure you want to confirm payment? This will notify the admin for approval.')">
+                        <i class="fas fa-check"></i> Confirm Payment
+                    </button>
+                </form>
+                {% elif t.status == 'Payment Confirmed' %}
+                <span class="text-info"><i class="fas fa-clock"></i> Waiting for admin approval</span>
+                {% elif t.status == 'Paid' %}
+                <span class="text-success"><i class="fas fa-check-circle"></i> Payment completed</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info mt-3">
+    No transactions found.
+</div>
+{% endif %}
+{% endblock %}

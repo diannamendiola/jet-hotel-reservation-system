@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.nav-tabs .nav-link {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #6c757d;
+  transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #495057;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-tabs .nav-link.active {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.nav-tabs .nav-link.active:hover {
+  background-color: #0056b3;
+  color: white;
+}
+</style>
+
+<!-- Welcome Section -->
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+          <h1 class="display-4 text-primary mb-3">
+            <i class="fas fa-user-shield me-3"></i>Welcome, {{ session.get('username') }}
+          </h1>
+          <p class="lead text-muted">Manage your hotel reservations and room inventory efficiently</p>
+          <hr class="my-4">
+          <div class="row text-center">
+            <div class="col-md-3">
+              <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                  <h3 class="card-title">{{ total_bookings }}</h3>
+                  <p class="card-text">Total Bookings</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                  <h3 class="card-title">₱{{ "{:,.0f}".format(total_revenue) }}</h3>
+                  <p class="card-text">Total Revenue</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                  <h3 class="card-title">{{ total_available_rooms }}</h3>
+                  <p class="card-text">Available Rooms</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                  <h3 class="card-title">{{ filtered_reservations|length if check_date else 0 }}</h3>
+                  <p class="card-text">Today's Reservations</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if active_tab == 'overview' %}active{% endif %}" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+            <i class="fas fa-chart-line me-2"></i>Overview
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if active_tab == 'manage-rooms' %}active{% endif %}" id="manage-rooms-tab" data-bs-toggle="tab" data-bs-target="#manage-rooms" type="button" role="tab">
+            <i class="fas fa-bed me-2"></i>Manage Rooms
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if active_tab == 'room-availability' %}active{% endif %}" id="room-availability-tab" data-bs-toggle="tab" data-bs-target="#room-availability" type="button" role="tab">
+            <i class="fas fa-calendar-check me-2"></i>Room Availability
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if active_tab == 'payment-approvals' %}active{% endif %}" id="payment-approvals-tab" data-bs-toggle="tab" data-bs-target="#payment-approvals" type="button" role="tab">
+            <i class="fas fa-credit-card me-2"></i>Payment Approvals
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content mt-4" id="adminTabsContent">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade {% if active_tab == 'overview' %}show active{% endif %}" id="overview" role="tabpanel">
+          <div class="row">
+            <div class="col-md-8">
+              <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                  <h5 class="card-title mb-0"><i class="fas fa-list me-2"></i>Recent Reservations</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead class="table-light">
+                        <tr>
+                          <th>ID</th>
+                          <th>User</th>
+                          <th>Room</th>
+                          <th>Check-in</th>
+                          <th>Check-out</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for r in reservations[:10] %}
+                        <tr>
+                          <td>{{ r.id }}</td>
+                          <td>{{ r.user.full_name }}</td>
+                          <td>{{ r.room.name }}</td>
+                          <td>{{ r.check_in.strftime('%Y-%m-%d') }}</td>
+                          <td>{{ r.check_out.strftime('%Y-%m-%d') }}</td>
+                          <td>
+                            <span class="badge bg-success">{{ r.status }}</span>
+                          </td>
+                          <td>
+                            <form method="POST" action="{{ url_for('cancel_reservation', reservation_id=r.id) }}" style="display: inline;">
+                              <button type="submit" class="btn btn-sm btn-outline-danger"
+                                      onclick="return confirm('Are you sure you want to cancel this reservation?')">
+                                <i class="fas fa-times"></i> Cancel
+                              </button>
+                            </form>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                  <h5 class="card-title mb-0"><i class="fas fa-bell me-2"></i>Recent Notifications</h5>
+                </div>
+                <div class="card-body">
+                  {% if notifications %}
+                    {% for notification in notifications %}
+                    <div class="alert alert-info py-2 mb-2">
+                      <small>{{ notification.message }}</small>
+                      <br>
+                      <small class="text-muted">{{ notification.created_at.strftime('%m/%d %H:%M') }}</small>
+                    </div>
+                    {% endfor %}
+                  {% else %}
+                    <p class="text-muted mb-0">No recent notifications</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manage Rooms Tab -->
+        <div class="tab-pane fade {% if active_tab == 'manage-rooms' %}show active{% endif %}" id="manage-rooms" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0"><i class="fas fa-bed me-2"></i>Room Management</h5>
+              <a href="{{ url_for('add_room') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus me-1"></i>Add New Room
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Price</th>
+                      <th>Available</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for room in rooms %}
+                    <tr>
+                      <td>{{ room.id }}</td>
+                      <td>{{ room.name }}</td>
+                      <td>₱{{ room.price }}</td>
+                      <td>
+                        {% if room.available %}
+                          <span class="badge bg-success">Available</span>
+                        {% else %}
+                          <span class="badge bg-danger">Unavailable</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <a href="{{ url_for('edit_room', room_id=room.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('delete_room', room_id=room.id) }}" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Are you sure you want to delete this room?')">
+                          <i class="fas fa-trash"></i>
+                        </a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Availability Tab -->
+        <div class="tab-pane fade {% if active_tab == 'room-availability' %}show active{% endif %}" id="room-availability" role="tabpanel">
+          <div class="row">
+            <!-- Booked Rooms Section -->
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                  <h5 class="card-title mb-0"><i class="fas fa-calendar-times me-2"></i>Booked Rooms ({{ booked_rooms|length }})</h5>
+                </div>
+                <div class="card-body">
+                  {% if booked_rooms %}
+                  <div class="row">
+                    {% for room in booked_rooms %}
+                    <div class="col-md-6 mb-3">
+                      <div class="card h-100 border-danger">
+                        <div class="card-body text-center">
+                          <h6 class="card-title">{{ room.name }}</h6>
+                          <p class="card-text">₱{{ room.price }}</p>
+                          <span class="badge bg-danger">Booked</span>
+                          <br>
+                          <small class="text-muted">Until {{ room.booked_until.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <p class="text-muted">No rooms are currently booked</p>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Unbooked Rooms Section -->
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                  <h5 class="card-title mb-0"><i class="fas fa-calendar-check me-2"></i>Unbooked Rooms ({{ unbooked_rooms|length }})</h5>
+                </div>
+                <div class="card-body">
+                  {% if unbooked_rooms %}
+                  <div class="row">
+                    {% for room in unbooked_rooms %}
+                    <div class="col-md-6 mb-3">
+                      <div class="card h-100 {% if room.status == 'available' %}border-success{% else %}border-warning{% endif %}">
+                        <div class="card-body text-center">
+                          <h6 class="card-title">{{ room.name }}</h6>
+                          <p class="card-text">₱{{ room.price }}</p>
+                          {% if room.status == 'available' %}
+                            <span class="badge bg-success">Available</span>
+                          {% else %}
+                            <span class="badge bg-warning">Unavailable</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="text-muted">All rooms are currently booked</p>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Approvals Tab -->
+        <div class="tab-pane fade {% if active_tab == 'payment-approvals' %}show active{% endif %}" id="payment-approvals" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <h5 class="card-title mb-0"><i class="fas fa-credit-card me-2"></i>Pending Payment Approvals</h5>
+            </div>
+            <div class="card-body">
+              {% if pending_transactions %}
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Transaction ID</th>
+                      <th>User</th>
+                      <th>Room</th>
+                      <th>Amount</th>
+                      <th>Check-in</th>
+                      <th>Check-out</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for transaction in pending_transactions %}
+                    <tr>
+                      <td>{{ transaction.id }}</td>
+                      <td>{{ transaction.reservation.user.full_name }}</td>
+                      <td>{{ transaction.reservation.room.name }}</td>
+                      <td>₱{{ transaction.amount }}</td>
+                      <td>{{ transaction.reservation.check_in.strftime('%Y-%m-%d') }}</td>
+                      <td>{{ transaction.reservation.check_out.strftime('%Y-%m-%d') }}</td>
+                      <td>
+                        <form method="POST" action="{{ url_for('approve_payment', transaction_id=transaction.id) }}" style="display: inline;">
+                          <button type="submit" class="btn btn-sm btn-success"
+                                  onclick="return confirm('Are you sure you want to approve this payment?')">
+                            <i class="fas fa-check"></i> Approve Payment
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>No pending payment approvals at this time.
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

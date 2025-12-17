@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Manage Rooms</h2>
+<a href="{{ url_for('add_room') }}" class="btn btn-primary mb-3">Add New Room</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Available</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for room in rooms %}
+        <tr>
+            <td>{{ room.id }}</td>
+            <td>{{ room.name }}</td>
+            <td>₱{{ room.price }}</td>
+            <td>{{ room.description }}</td>
+            <td>{{ "Yes" if room.available else "No" }}</td>
+            <td>
+                <a href="{{ url_for('edit_room', room_id=room.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                <a href="{{ url_for('delete_room', room_id=room.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

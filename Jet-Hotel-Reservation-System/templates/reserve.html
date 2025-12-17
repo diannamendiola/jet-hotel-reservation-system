@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Reserve Room: {{ room.name }}</h2>
+<p>{{ room.description }}</p>
+<p>Price: ₱{{ room.price }}</p>
+<form method="POST" id="reservationForm">
+    <div class="mb-3">
+        <label class="form-label">Check-in Date</label>
+        <input type="date" name="check_in" id="check_in" class="form-control" required min="{{ today }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Check-out Date</label>
+        <input type="date" name="check_out" id="check_out" class="form-control" required min="{{ today }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Confirm Reservation</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkInInput = document.getElementById('check_in');
+    const checkOutInput = document.getElementById('check_out');
+    const form = document.getElementById('reservationForm');
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    checkInInput.min = today;
+    checkOutInput.min = today;
+
+    // Update check-out min date when check-in changes
+    checkInInput.addEventListener('change', function() {
+        checkOutInput.min = this.value;
+        if (checkOutInput.value && checkOutInput.value <= this.value) {
+            checkOutInput.value = '';
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const checkInDate = new Date(checkInInput.value);
+        const checkOutDate = new Date(checkOutInput.value);
+        const todayDate = new Date();
+
+        // Check if check-in is in the past
+        if (checkInDate < todayDate.setHours(0,0,0,0)) {
+            alert('Check-in date cannot be in the past.');
+            e.preventDefault();
+            return;
+        }
+
+        // Check if check-out is before check-in
+        if (checkOutDate <= checkInDate) {
+            alert('Check-out date must be after check-in date.');
+            e.preventDefault();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

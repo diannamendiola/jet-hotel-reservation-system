@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Reserve: {{ room.name }}</h2>
+<p>Price: ₱{{ room.price }}</p>
+<form method="POST">
+  <div class="mb-3">
+    <label class="form-label">Check-in Date</label>
+    <input type="date" name="check_in" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Check-out Date</label>
+    <input type="date" name="check_out" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-success">Confirm Reservation</button>
+</form>
+{% endblock %}

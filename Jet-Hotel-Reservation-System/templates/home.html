@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Hero Section -->
+<section id="hero">
+    <div class="hero-content text-center">
+        <h1 class="display-4">Welcome to Jet Hotel</h1>
+        <p class="lead">Experience luxury, comfort, and convenience</p>
+        <a href="#rooms" class="btn btn-primary btn-lg mt-3">View Rooms</a>
+    </div>
+</section>
+
+<!-- Date Selector -->
+<section id="date-selector" class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Find Available Rooms</h2>
+        <form method="GET" action="{{ url_for('home') }}" id="availabilityForm" class="row g-3 justify-content-center">
+            <div class="col-md-3">
+                <label for="check_in" class="form-label">Check-in Date</label>
+                <input type="date" class="form-control" id="check_in" name="check_in" value="{{ check_in }}" min="{{ today }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="check_out" class="form-label">Check-out Date</label>
+                <input type="date" class="form-control" id="check_out" name="check_out" value="{{ check_out }}" min="{{ today }}" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Check Availability</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Rooms Section -->
+<section id="rooms">
+    <div class="container">
+        <h2 class="text-center mb-5">Our Rooms</h2>
+        <div class="row">
+            {% for room_data in rooms %}
+            <div class="col-md-4 mb-4">
+                <div class="card room-card {% if not room_data.is_available %}opacity-50{% endif %}">
+                    <img src="{{ url_for('static', filename='css/uploads/' + (room_data.room.image or 'home.jpg')) }}"
+                         class="card-img-top {% if not room_data.is_available %}grayscale{% endif %}" alt="{{ room_data.room.name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ room_data.room.name }}</h5>
+                        <p class="card-text">{{ room_data.room.description }}</p>
+                        <p class="fw-bold">₱{{ room_data.room.price }}</p>
+                        {% if not room_data.is_available %}
+                        <div class="alert alert-warning py-2 mb-2">
+                            <small><i class="fas fa-calendar-times"></i> Booked for selected dates</small>
+                        </div>
+                        {% endif %}
+                        {% if session.get('user_id') %}
+                            {% if room_data.is_available %}
+                            <a href="{{ url_for('reserve', room_id=room_data.room.id) }}" class="btn btn-primary w-100">Book Now</a>
+                            {% else %}
+                            <button class="btn btn-secondary w-100" disabled>Unavailable</button>
+                            {% endif %}
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-secondary w-100">Login to Book</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Date validation script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkInInput = document.getElementById('check_in');
+    const checkOutInput = document.getElementById('check_out');
+    const form = document.getElementById('availabilityForm');
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    checkInInput.min = today;
+    checkOutInput.min = today;
+
+    // Update check-out min date when check-in changes
+    checkInInput.addEventListener('change', function() {
+        checkOutInput.min = this.value;
+        if (checkOutInput.value && checkOutInput.value <= this.value) {
+            checkOutInput.value = '';
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const checkInDate = new Date(checkInInput.value);
+        const checkOutDate = new Date(checkOutInput.value);
+        const todayDate = new Date();
+        todayDate.setHours(0,0,0,0);
+
+        // Check if check-in is in the past
+        if (checkInDate < todayDate) {
+            alert('Check-in date cannot be in the past.');
+            e.preventDefault();
+            return;
+        }
+
+        // Check if check-out is before check-in
+        if (checkOutDate <= checkInDate) {
+            alert('Check-out date must be after check-in date.');
+            e.preventDefault();
+            return;
+        }
+    });
+});
+</script>
+
+<!-- Smooth scroll & active nav -->
+<script>
+const sections = document.querySelectorAll("section");
+const navLinks = document.querySelectorAll(".navbar-nav .nav-link");
+
+window.addEventListener("scroll", () => {
+    let current = "";
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop - 80;
+        if (pageYOffset >= sectionTop) {
+            current = section.getAttribute("id");
+        }
+    });
+
+    navLinks.forEach(link => {
+        link.classList.remove("active");
+        if (link.getAttribute("href").includes(current)) {
+            link.classList.add("active");
+        }
+    });
+});
+</script>
+{% endblock %}
